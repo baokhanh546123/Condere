@@ -40,3 +40,7 @@ cd condere
 # Cấp quyền thực thi và chạy script
 chmod +x ./scripts.sh
 ./scripts.sh
+```
+
+## Liên hệ 
+Chúng tôi rất hoan ngênh mọi sử dụng đóng góp bạn có thể tạo __issuse__ trong ngay trong github hoặc đóng góp mã nguồn đề giúp nó hoàn thiện hơn.

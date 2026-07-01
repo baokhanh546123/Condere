@@ -2,14 +2,7 @@
 # ==============================================================================
 # App Installer for Ubuntu — Enterprise Edition v2.1
 # ------------------------------------------------------------------------------
-# Cài đặt lại toàn bộ phần mềm sau khi nâng cấp Ubuntu / mất dữ liệu, có:
-#   - Xác thực THẬT SỰ sau khi cài (không chỉ tin vào exit code)
-#   - Không dừng toàn bộ script khi 1 gói lỗi (báo cáo cuối cùng đầy đủ)
-#   - Tự dò & ưu tiên nguồn cài đặt: APT > Snap > Flatpak > thủ công
-#   - Bỏ qua gói đã cài sẵn (idempotent) — an toàn khi chạy lại nhiều lần
-#   - Ghi log đầy đủ ra file để audit / gửi cho IT
-#   - Tải file về trước khi chạy (không pipe thẳng curl|bash) để có thể audit
-#   - Hỗ trợ chế độ: Common, Developer, Developer+Data, Officer, Designer
+# ... (phần đầu giữ nguyên)
 # ==============================================================================
 
 set -uo pipefail
@@ -170,6 +163,7 @@ add_pkg "pycharm"        "PyCharm"                      "snap" "400" "--classic"
 add_pkg "android-studio" "Android Studio"               "snap" "800" "--classic" "android-studio"
 add_pkg "webstorm"       "WebStorm"                     "snap" "450" "--classic" "webstorm"
 add_pkg "clion"          "CLion"                        "snap" "450" "--classic" "clion"
+add_pkg "rstudio"        "RStudio"                      "snap" "200" "--classic" "rstudio"      # thêm RStudio
 
 # ---------- Version Control ----------
 add_pkg "git"            "Git"                          "apt"  "20"  ""
@@ -205,6 +199,7 @@ add_pkg "pyenv"      "pyenv"                   "curl" "5"   "https://pyenv.run"
 add_pkg "virtualenv" "virtualenv"              "pip"  "1"   ""
 add_pkg "golang"     "Go"                      "apt"  "100" "" "golang-go"
 add_pkg "rust"       "Rust (rustup)"           "curl" "50"  "https://sh.rustup.rs"
+add_pkg "r"          "R Language"              "apt"  "100" "" "r-base"              # thêm R
 
 # ---------- Container ----------
 add_pkg "docker"         "Docker Engine"  "curl" "100" "https://get.docker.com"
@@ -239,6 +234,7 @@ add_pkg "mongodb-compass" "MongoDB Compass" "manual" "100" "https://downloads.mo
 add_pkg "powerbi"    "Power BI Desktop (Web)" "manual" "0" "https://app.powerbi.com/"
 add_pkg "tableau"    "Tableau (Web)"          "manual" "0" "https://www.tableau.com/"
 add_pkg "zeppelin"   "Apache Zeppelin"        "manual" "200" "https://downloads.apache.org/zeppelin/zeppelin-0.11.2/zeppelin-0.11.2-bin-all.tgz"
+add_pkg "jasp"       "JASP (Statistics)"      "snap"   "150" "" "jasp-desktop"        # thêm JASP
 
 # ---------- Văn phòng ----------
 add_pkg "libreoffice" "LibreOffice"                "apt"  "200" ""
@@ -269,26 +265,19 @@ add_pkg "nerd-fonts"   "Nerd Fonts"                  "manual" "50" "https://gith
 add_pkg "ibus"         "IBus Input Method"           "apt"  "10"  ""
 add_pkg "ibus-bamboo"  "IBus Bamboo (Vietnamese)"    "apt"  "5"   "" "ibus-bamboo"
 
-# ---------- Designer (thêm mới) ----------
-# UI/UX Design
+# ---------- Designer ----------
 add_pkg "figma"      "Figma Desktop (unofficial)"     "snap" "150" "" "figma-linux"
 add_pkg "penpot"     "Penpot Desktop (unofficial)"    "snap" "100" "" "penpot-desktop"
 add_pkg "drawio"     "draw.io Desktop"                "snap" "150" "" "drawio"
 add_pkg "excalidraw" "Excalidraw (Web)"               "manual" "0" "https://excalidraw.com/"
-
-# Graphic Design
-add_pkg "gimp"     "GIMP"     "apt"  "200" ""
-add_pkg "inkscape" "Inkscape" "apt"  "150" ""
-add_pkg "krita"    "Krita"    "snap" "300" "" "krita"
-add_pkg "blender"  "Blender"  "snap" "300" "" "blender"
-
-# PDF Processing
-add_pkg "master-pdf-editor" "Master PDF Editor"     "manual" "150" "https://code-industry.net/free-pdf-editor/"
-add_pkg "pdfarranger"       "PDF Arranger"          "apt"    "10"  ""
-
-# Utilities
-add_pkg "font-manager" "Font Manager" "apt" "10" ""
-add_pkg "imagemagick"  "ImageMagick"  "apt" "10" ""
+add_pkg "gimp"       "GIMP"                           "apt"  "200" ""
+add_pkg "inkscape"   "Inkscape"                       "apt"  "150" ""
+add_pkg "krita"      "Krita"                          "snap" "300" "" "krita"
+add_pkg "blender"    "Blender"                        "snap" "300" "" "blender"
+add_pkg "master-pdf-editor" "Master PDF Editor"       "manual" "150" "https://code-industry.net/free-pdf-editor/"
+add_pkg "pdfarranger"       "PDF Arranger"            "apt"    "10"  ""
+add_pkg "font-manager"      "Font Manager"            "apt"    "10"  ""
+add_pkg "imagemagick"       "ImageMagick"             "apt"    "10"  ""
 
 # ------------------------------------------------------------------------------
 # Ghi đè lệnh xác thực cho các gói
@@ -332,6 +321,10 @@ set_verify "google-meet"     "true"
 set_verify "powerbi"         "true"
 set_verify "tableau"         "true"
 set_verify "pgadmin"         "true"
+set_verify "r"               "command -v R"
+set_verify "rstudio"         "command -v rstudio"
+set_verify "jasp"            "command -v jasp"
+
 # Common
 set_verify "p7zip"           "command -v 7z || dpkg -l p7zip-full 2>/dev/null | grep -q '^ii'"
 set_verify "unzip"           "command -v unzip"
@@ -548,10 +541,9 @@ install_package() {
                         ok=0
                         ;;
                     nerd-fonts)
-                        # Cài unzip nếu chưa có (cần cho giải nén)
                         if ! command -v unzip &>/dev/null; then
                             log INFO "Cài unzip để giải nén Nerd Fonts..."
-                            sudo apt-get install -y unzip || log WARN "Không thể cài unzip, thử giải nén bằng cách khác."
+                            sudo apt-get install -y unzip || log WARN "Không thể cài unzip."
                         fi
                         mkdir -p "$HOME/.local/share/fonts/NerdFonts"
                         local zip_file="$TMP_DIR/nerd-fonts.zip"
@@ -714,11 +706,11 @@ Script sẽ:
 
     # ----- Chế độ Developer -----
     if [[ "$MODE" == "Developer" || "$MODE" == "Developer+Data" ]]; then
-        CATEGORY_TAGS["IDE"]="vscode intellij pycharm android-studio webstorm clion"
+        CATEGORY_TAGS["IDE"]="vscode intellij pycharm android-studio webstorm clion rstudio"       # thêm rstudio
         CATEGORY_TAGS["Version Control"]="git git-lfs github-desktop gitkraken"
         CATEGORY_TAGS["Terminal"]="terminator tilix tmux screen"
         CATEGORY_TAGS["Shell"]="zsh ohmyzsh starship"
-        CATEGORY_TAGS["Runtime"]="nodejs npm pnpm yarn nvm openjdk maven gradle python3 pip pipx poetry pyenv virtualenv golang rust"
+        CATEGORY_TAGS["Runtime"]="nodejs npm pnpm yarn nvm openjdk maven gradle python3 pip pipx poetry pyenv virtualenv golang rust r"   # thêm r
         CATEGORY_TAGS["Docker"]="docker docker-compose"
         CATEGORY_TAGS["Database Client"]="dbeaver tableplus beekeeper"
         CATEGORY_TAGS["API Testing"]="postman bruno insomnia"
@@ -730,7 +722,7 @@ Script sẽ:
     if [[ "$MODE" == "Developer+Data" ]]; then
         CATEGORY_TAGS["Python Environment"]="anaconda miniconda jupyter jupyterlab"
         CATEGORY_TAGS["Data Processing"]="spark hadoop"
-        CATEGORY_TAGS["BI Tools"]="powerbi tableau"
+        CATEGORY_TAGS["BI Tools"]="powerbi tableau jasp"    # thêm jasp
         CATEGORY_TAGS["Notebook"]="zeppelin"
         CATEGORY_TAGS["Database Client"]+=" pgadmin mongodb-compass"
     fi
