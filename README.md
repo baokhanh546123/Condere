@@ -32,7 +32,7 @@ Mở terminal lên và chạy chuỗi lệnh sau để bắt đầu cài đặt:
 
 ```bash
 # Clone dự án về máy cục bộ
-git clone [https://github.com/baokhanh546123/Condere.git](https://github.com/baokhanh546123/Condere.git)
+git clone https://github.com/baokhanh546123/Condere.git
 
 # Di chuyển vào thư mục dự án
 cd condere
